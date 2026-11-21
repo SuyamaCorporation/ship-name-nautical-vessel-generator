@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>船名・海洋船舶ネームジェネレーター</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-blue-950 min-h-screen p-4">
+<div class="max-w-lg mx-auto">
+  <h1 class="text-3xl font-bold text-blue-200 text-center mb-1">⚓ 船名ジェネレーター</h1>
+  <p class="text-blue-500 text-center text-sm mb-6">海洋船舶ネームジェネレーター</p>
+
+  <div class="bg-blue-900 rounded-xl p-3 mb-4">
+    <label class="text-blue-300 text-sm mr-2" for="ship-type">艦種:</label>
+    <select id="ship-type" class="bg-blue-800 text-white rounded-lg px-3 py-2 border border-blue-700 outline-none" aria-label="艦種を選択">
+      <option value="manofwar">Man-of-War（HMS 戦列艦）</option>
+      <option value="pirate">海賊船</option>
+      <option value="submarine">潜水艦</option>
+      <option value="clipper">クリッパー帆船</option>
+      <option value="steam">蒸気船</option>
+    </select>
+  </div>
+
+  <button onclick="generateShip()" class="w-full bg-blue-700 hover:bg-blue-600 text-white py-3 rounded-2xl font-bold text-lg mb-6 transition">🌊 船を生成</button>
+
+  <div id="ship-card" class="hidden bg-blue-900 rounded-2xl p-6 border border-blue-700"></div>
+</div>
+
+<script>
+const rnd = arr => arr[Math.floor(Math.random() * arr.length)];
+const rndN = (a, b) => Math.floor(Math.random() * (b - a + 1)) + a;
+
+const data = {
+  manofwar: {
+    prefix: 'HMS',
+    adjectives: ['Invincible','Sovereign','Thunderous','Valiant','Dauntless','Courageous','Indomitable','Resolute','Formidable'],
+    nouns: ['Victory','Triumph','Endeavour','Revenge','Achilles','Agamemnon','Colossus','Neptune','Repulse'],
+    classNames: ['第1級戦列艦','第2級戦列艦','第3級戦列艦','フリゲート艦'],
+    desc: 'イギリス海軍の戦列艦。74〜130門の大砲を装備し、大西洋・インド洋を制圧した帆走軍艦。',
+    flags: ['🇬🇧'],
+    mast: '三本マスト帆装・正方形帆',
+  },
+  pirate: {
+    prefix: '',
+    adjectives: ['Black','Crimson','Cursed','Dread','Bloody','Golden','Dark','Scarlet','Raging'],
+    nouns: ['Revenge','Serpent','Pearl','Dagger','Shadow','Phantom','Skull','Tempest','Ghost'],
+    classNames: ['スループ船','ブリガンティン','フルート船','フリゲート艦（拿捕）'],
+    desc: '恐れられた海賊船。快速と奇襲を武器に、交易船を標的とした。旗は骸骨と骨が交差するジョリーロジャー。',
+    flags: ['🏴‍☠️'],
+    mast: '二本マスト・横帆と縦帆混合',
+  },
+  submarine: {
+    prefix: 'USS',
+    adjectives: ['Silent','Deep','Shadow','Iron','Dark','Steel','Thunder','Ghost','Hunter'],
+    nouns: ['Shark','Barracuda','Leviathan','Triton','Poseidon','Narwhal','Marlin','Devilfish','Stingray'],
+    classNames: ['攻撃型原子力潜水艦','弾道ミサイル潜水艦','通常型ディーゼル潜水艦','偵察型潜水艦'],
+    desc: '水中を縦横に動く海中の刺客。静寂の中で敵艦に魚雷を放つ近代兵器の粋。',
+    flags: ['🇺🇸', '🇬🇧', '🇩🇪'],
+    mast: '潜望鏡・舵翼装備',
+  },
+  clipper: {
+    prefix: '',
+    adjectives: ['Flying','Swiftest','Golden','Blazing','Iron','Gallant','Silver','Wild','Speedy'],
+    nouns: ['Cloud','Arrow','Wave','Hawk','Eagle','Lightning','Clipper','Wind','Star'],
+    classNames: ['ティーク製クリッパー','複合建造クリッパー','ショートクリッパー'],
+    desc: '速力最優先の帆船。19世紀のお茶・金の輸送に活躍。上海〜ロンドン間を90日で走破した快速帆船。',
+    flags: ['🇬🇧', '🇺🇸'],
+    mast: '三本マスト全装帆船・多数の帆',
+  },
+  steam: {
+    prefix: 'SS',
+    adjectives: ['Royal','Imperial','Pacific','Atlantic','Great','Eastern','Northern','Southern','Continental'],
+    nouns: ['Britannia','Empress','Monarch','Liberty','Enterprise','Pioneer','Progress','Oceanic','Majestic'],
+    classNames: ['外輪蒸気船','スクリュー蒸気船','複合エンジン貨客船','定期客船'],
+    desc: '19〜20世紀の蒸気機関を動力とした近代船舶。大西洋横断定期航路を運航し、大量移民輸送を担った。',
+    flags: ['🇬🇧', '🇩🇪', '🇫🇷', '🇺🇸'],
+    mast: '煙突付き・補助帆装',
+  },
+};
+
+const captainFirst = ['James','William','Robert','Edward','Charles','Henry','Thomas','George','Samuel','John','Blackbeard','Redhand','Ironjaw'];
+const captainLast = ['Drake','Hawkins','Morgan','Kidd','Hornblower','Flint','Silver','Rackham','Read','Nelson','Bridger'];
+const ports = ['ポーツマス','ブリストル','リスボン','ハバナ','トルトゥーガ島','ナッソー','横浜','シンガポール','ケープタウン','マルセイユ'];
+
+function generateShip() {
+  const type = document.getElementById('ship-type').value;
+  const d = data[type];
+  const adj = rnd(d.adjectives);
+  const noun = rnd(d.nouns);
+  const shipName = d.prefix ? `${d.prefix} ${adj} ${noun}` : `${adj} ${noun}`;
+  const className = rnd(d.classNames);
+  const tonnage = rndN(200, 3500);
+  const guns = type === 'submarine' ? rndN(6, 24) + '本（魚雷発射管）' : rndN(8, 128) + '門';
+  const crew = rndN(30, 850);
+  const port = rnd(ports);
+  const flag = rnd(d.flags);
+  const captain = rnd(captainFirst) + ' ' + rnd(captainLast);
+  const year = rndN(1620, 1920);
+
+  const card = document.getElementById('ship-card');
+  card.classList.remove('hidden');
+  card.innerHTML = ''; // xss-ok: static template, no user input
+
+  const title = document.createElement('div');
+  title.className = 'text-3xl font-bold text-blue-100 mb-1';
+  title.textContent = flag + ' ' + shipName;
+  card.appendChild(title);
+
+  const classDiv = document.createElement('div');
+  classDiv.className = 'text-blue-400 text-sm mb-4';
+  classDiv.textContent = className + ' · ' + year + '年就役';
+  card.appendChild(classDiv);
+
+  const descDiv = document.createElement('p');
+  descDiv.className = 'text-blue-300 text-sm mb-4 leading-relaxed';
+  descDiv.textContent = d.desc;
+  card.appendChild(descDiv);
+
+  const grid = document.createElement('div');
+  grid.className = 'grid grid-cols-2 gap-2 text-sm mb-4';
+  const stats = [
+    ['🏠 母港', port],
+    ['⚓ 船長', 'Captain ' + captain],
+    ['⚖️ 排水量', tonnage.toLocaleString() + 'トン'],
+    ['👥 乗組員', crew + '名'],
+    ['🔫 武装', guns],
+    ['⛵ 艤装', d.mast],
+  ];
+  stats.forEach(([k, v]) => {
+    const div = document.createElement('div');
+    div.className = 'bg-blue-800 rounded-lg p-2';
+    const kDiv = document.createElement('div');
+    kDiv.className = 'text-blue-400 text-xs';
+    kDiv.textContent = k;
+    const vDiv = document.createElement('div');
+    vDiv.className = 'text-blue-100 font-semibold';
+    vDiv.textContent = v;
+    div.appendChild(kDiv);
+    div.appendChild(vDiv);
+    grid.appendChild(div);
+  });
+  card.appendChild(grid);
+}
+</script>
+</body>
+</html>
